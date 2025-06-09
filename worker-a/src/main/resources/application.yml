@@ -1,0 +1,11 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: worker-a-agent
+
+logging:
+  level:
+    com.example.workera: DEBUG
+    net.kaduk.a2a: DEBUG

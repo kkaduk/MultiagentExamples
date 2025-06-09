@@ -1,0 +1,7 @@
+com/example/coordinator/model/WorkerTask.class
+com/example/coordinator/model/AggregatedResult$AggregatedResultBuilder.class
+com/example/coordinator/model/WorkerTask$WorkerTaskBuilder.class
+com/example/coordinator/CoordinatorAgent.class
+com/example/coordinator/TaskDispatcher.class
+com/example/coordinator/CoordinatorApplication.class
+com/example/coordinator/model/AggregatedResult.class

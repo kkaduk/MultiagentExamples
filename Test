@@ -1,0 +1,92 @@
+#!/bin/bash
+
+echo "=== Testing Multi-Agent System ==="
+
+echo "1. Testing individual agents..."
+
+echo "- Testing Coordinator Agent card:"
+curl -s http://localhost:8080/agent/card | jq .
+
+echo "- Testing Worker A Agent card:"
+curl -s http://localhost:8081/agent/card | jq .
+
+echo "- Testing Worker B Agent card:"
+curl -s http://localhost:8082/agent/card | jq .
+
+echo "2. Testing coordination workflow..."
+
+curl -X POST http://localhost:8080/agent/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "id": "test-coordination-1",
+    "params": {
+      "message": {
+        "kind": "message",
+        "messageId": "msg-001",
+        "role": "user",
+        "taskId": "coordinate",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Hello world this is a test message for coordination"
+          }
+        ]
+      },
+      "configuration": {
+        "acceptedOutputModes": ["text/plain"],
+        "blocking": true
+      }
+    }
+  }' | jq .
+
+echo "3. Testing direct worker communication..."
+
+echo "- Testing Worker A transform:"
+curl -X POST http://localhost:8081/agent/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "id": "test-worker-a-1",
+    "params": {
+      "message": {
+        "kind": "message",
+        "messageId": "msg-002",
+        "role": "user",
+        "taskId": "transform",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Transform this text please"
+          }
+        ]
+      }
+    }
+  }' | jq .
+
+echo "- Testing Worker B analyze:"
+curl -X POST http://localhost:8082/agent/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "id": "test-worker-b-1",
+    "params": {
+      "message": {
+        "kind": "message",
+        "messageId": "msg-003",
+        "role": "user",
+        "taskId": "analyze",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "This is a wonderful and amazing text that should be analyzed for sentiment and other characteristics"
+          }
+        ]
+      }
+    }
+  }' | jq .
+
+echo "=== Testing Complete ==="
