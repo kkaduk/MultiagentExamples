@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
 @A2AAgent(
     name = "TextTransformerAgent", 
     version = "1.0", 
-    description = "Performs various text transformation operations"
+    description = "Performs various text transformation operations",
+    url = "http://localhost:8081"
 )
 @Component
 public class TextTransformerAgent {

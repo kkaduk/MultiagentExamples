@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
 @A2AAgent(
     name = "TextAnalyzerAgent", 
     version = "1.0", 
-    description = "Performs comprehensive text analysis including statistics, sentiment, and readability"
+    description = "Performs comprehensive text analysis including statistics, sentiment, and readability",
+    url = "http://localhost:8082"
 )
 @Component
 public class TextAnalyzerAgent {

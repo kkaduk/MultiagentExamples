@@ -1,4 +1,4 @@
-package com.example.coordinator.model
+package com.example.coordinator.model;
 
 import lombok.Data;
 

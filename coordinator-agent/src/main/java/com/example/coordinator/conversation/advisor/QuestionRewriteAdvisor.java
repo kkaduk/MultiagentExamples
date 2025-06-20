@@ -1,4 +1,4 @@
-package com.oracle.mcp.client.kb.chat.conversation.advisor;
+package com.example.coordinator.conversation.advisor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,20 +26,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-/**
- * Advisor that rewrites the user query to be more concise and easier to
- * understand.
- *
- * <p>
- * This advisor intercepts the user query, applies a rewriting template, and
- * replaces the original query with the rewritten version. The original and
- * rewritten queries are stored in the advice context.
- * </p>
- *
- * @author
- * @since 1.0.0
- */
-
 public class QuestionRewriteAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
     public static final String ORIGINAL_QUERY = "original_query";
@@ -58,23 +44,12 @@ public class QuestionRewriteAdvisor implements CallAroundAdvisor, StreamAroundAd
 
     @Value("${spring.ai.anthropic.api-key}")
     private String athKey;
-    // private static ChatClient chatClient;
-
-    /**
-     * Creates a QueryRewriteAdvisor with the default rewriting template.
-     */
+  
     public QuestionRewriteAdvisor() {
         this(DEFAULT_QUERY_REWRITE_TEMPLATE, true, 0);
     }
 
-    /**
-     * Creates a QueryRewriteAdvisor with the specified rewriting template.
-     *
-     * @param queryRewriteTemplate the template used to rewrite the query
-     * @param protectFromBlocking  if true the advisor will protect execution from
-     *                             blocking threads
-     * @param order                the order of the advisor
-     */
+
     public QuestionRewriteAdvisor(String queryRewriteTemplate, boolean protectFromBlocking,
             int order) {
         Assert.hasText(queryRewriteTemplate, "The queryRewriteTemplate must not be empty!");
@@ -83,11 +58,6 @@ public class QuestionRewriteAdvisor implements CallAroundAdvisor, StreamAroundAd
         this.order = order;
     }
 
-    /**
-     * Creates a builder for a QueryRewriteAdvisor.
-     *
-     * @return the builder instance
-     */
     public static Builder builder() {
         return new Builder();
     }

@@ -12,32 +12,12 @@ import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 
 import com.example.coordinator.model.WorkerSkilsDTO;
-import com.example.coordinator.tools.Receptionist;
-
-// import com.oracle.mcp.client.kb.chat.model.WorkerSkilsDTO;
-// import com.oracle.mcp.client.kb.chat.tools.Receptionist;
 import static com.example.coordinator.tools.TaskPromptGenerator.generatePrompt;
 
 import lombok.NonNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-
-/**
- * Advisor inoke WorkerAgents suitable for given task and return its results.
- *
- * <p>
- * This advisor intercepts the user query, apply template suitable for
- * divcovered Worker, and
- * replaces the original query with the rewritten version. The original and
- * rewritten queries are stored in the advice context.
- * The main goal is to drive LLM to plan task and distrubute it to available
- * workers.
- * </p>
- *
- * @author
- * @since 1.0.0
- */
 
 public class CoordynatorAgentAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
@@ -47,13 +27,6 @@ public class CoordynatorAgentAdvisor implements CallAroundAdvisor, StreamAroundA
     private final boolean protectFromBlocking;
     private final int order;
 
-    /**
-     * Creates a CoordynatorAgentAdvisor.
-     *
-     * @param protectFromBlocking if true the advisor will protect execution from
-     *                            blocking threads
-     * @param order               the order of the advisor
-     */
     public CoordynatorAgentAdvisor(boolean protectFromBlocking, int order) {
         this.protectFromBlocking = protectFromBlocking;
         this.order = order;
@@ -62,12 +35,6 @@ public class CoordynatorAgentAdvisor implements CallAroundAdvisor, StreamAroundA
     public CoordynatorAgentAdvisor() {
         this(true, 0);
     }
-
-    /**
-     * Creates a builder for a CoordynatorAgentAdvisor.
-     *
-     * @return the builder instance
-     */
     public static Builder builder() {
         return new Builder();
     }

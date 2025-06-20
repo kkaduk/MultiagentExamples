@@ -3,7 +3,6 @@ package com.example.coordinator.workflow;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -16,15 +15,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-// import com.oracle.a2a.client.A2AClient;
-// import com.oracle.a2a.model.Message;
-// import com.oracle.a2a.model.Part;
-// import com.oracle.a2a.model.TaskArtifactUpdateEvent;
-// import com.oracle.a2a.model.TaskSendParams;
-// import com.oracle.a2a.model.TaskState;
-// import com.oracle.a2a.model.TaskStatusUpdateEvent;
-// import com.oracle.a2a.model.TextPart;
+
 import net.kaduk.a2a.A2AAgent;
+import net.kaduk.a2a.A2AWebClientService;
+import net.kaduk.a2a.Message;
+import net.kaduk.a2a.MessageSendConfiguration;
+import net.kaduk.a2a.MessageSendParams;
+import net.kaduk.a2a.Part;
+import net.kaduk.a2a.SendMessageRequest;
+import net.kaduk.a2a.SendMessageSuccessResponse;
+import net.kaduk.a2a.TextPart;
 
 @Service
 public class WorkflowOrchestrator {
@@ -32,6 +32,7 @@ public class WorkflowOrchestrator {
 
     private final ObjectMapper objectMapper;
     private final Map<String, A2AAgent> agentClients;
+    private final A2AWebClientService a2aClient;
 
     // Store for tasks and their results
     private final Map<Integer, WorkflowTask> workflowTasks = new ConcurrentHashMap<>();
@@ -42,9 +43,12 @@ public class WorkflowOrchestrator {
     private final AtomicBoolean workflowRunning = new AtomicBoolean(false);
     private CountDownLatch workflowCompletionLatch;
 
-    public WorkflowOrchestrator(ObjectMapper objectMapper, Map<String, A2AAgent> agentClients) {
+    public WorkflowOrchestrator(ObjectMapper objectMapper, 
+                               Map<String, A2AAgent> agentClients,
+                               A2AWebClientService a2aClient) {
         this.objectMapper = objectMapper;
         this.agentClients = agentClients;
+        this.a2aClient = a2aClient;
     }
 
     /**
@@ -104,44 +108,67 @@ public class WorkflowOrchestrator {
 
         updateTaskStatus(task.getTaskNumber(), "RUNNING");
 
-        // Find the A2A client for this agent
-        A2AClient client = agentClients.getOrDefault(
-                task.getAgent().toLowerCase().replaceAll("\\s+", ""),
-                agentClients.get("default"));
-
-        if (client == null) {
-            handleTaskFailure(task, new RuntimeException("No A2A client found for agent: " + task.getAgent()));
-            return;
-        }
-
         // Map agent to task for callback handling
         agentToTaskMap.put(task.getAgent(), task.getTaskNumber());
 
         // Build the message including any results from predecessors
         String taskMessage = buildTaskMessage(task);
 
-        // Create task parameters with the message
-        TaskSendParams params = new TaskSendParams();
-        Message message = new Message();
-        TextPart textPart = new TextPart();
-        textPart.setText(taskMessage);
-        message.setParts(new Part[] { textPart });
-        params.setMessage(message);
+        // Get agent URL - you'll need to map agent names to URLs
+        String agentUrl = getAgentUrl(task.getAgent());
+        
+        if (agentUrl == null) {
+            handleTaskFailure(task, new RuntimeException("No URL found for agent: " + task.getAgent()));
+            return;
+        }
 
-        // Send the task to the agent with streaming updates
+        // Create the A2A message request
+        SendMessageRequest request = SendMessageRequest.builder()
+                .id(java.util.UUID.randomUUID().toString())
+                .params(MessageSendParams.builder()
+                        .message(Message.builder()
+                                .kind("message")
+                                .messageId(java.util.UUID.randomUUID().toString())
+                                .role("user")
+                                .taskId(task.getAgent().toLowerCase())
+                                .contextId(String.valueOf(task.getTaskNumber()))
+                                .parts(java.util.Collections.singletonList(TextPart.builder()
+                                        .text(taskMessage)
+                                        .build()))
+                                .build())
+                        .configuration(MessageSendConfiguration.builder()
+                                .acceptedOutputModes(java.util.Collections.singletonList("text/plain"))
+                                .blocking(true)
+                                .build())
+                        .build())
+                .build();
+
+        // Send the task to the agent
         try {
-            client.sendAndSubscribe(
-                    params,
-                    this::handleStatusUpdate,
-                    this::handleArtifactUpdate,
-                    error -> handleTaskFailure(task, error))
-                    .exceptionally(ex -> {
-                        handleTaskFailure(task, ex);
-                        return null;
-                    });
+            a2aClient.sendMessage(agentUrl, request)
+                    .doOnSuccess(response -> handleTaskSuccess(task, response))
+                    .doOnError(error -> handleTaskFailure(task, error))
+                    .subscribe();
         } catch (Exception e) {
             handleTaskFailure(task, e);
         }
+    }
+
+    /**
+     * Handle successful task completion
+     */
+    private void handleTaskSuccess(WorkflowTask task, SendMessageSuccessResponse response) {
+        logger.info("Task #{} completed successfully", task.getTaskNumber());
+        
+        String result = extractResultFromResponse(response);
+        taskResults.put(task.getTaskNumber(), result);
+        updateTaskStatus(task.getTaskNumber(), "COMPLETED");
+        
+        // Find and trigger dependent tasks
+        triggerDependentTasks(task.getTaskNumber());
+        
+        // Mark this task as done
+        workflowCompletionLatch.countDown();
     }
 
     /**
@@ -164,72 +191,12 @@ public class WorkflowOrchestrator {
     }
 
     /**
-     * Handle task status updates
-     */
-    private void handleStatusUpdate(TaskStatusUpdateEvent event) {
-        logger.debug("Received status update for task: {}, status: {}",
-                event.getId(), event.getStatus());
-
-        if (event.getStatus().getState() != null && TaskState.fromValue(event.getStatus().getState().toString()) == TaskState.COMPLETED) {
-            // Use content from the task, not getResponse()
-            String result = event.getStatus().getMessage() != null ? event.getStatus().getMessage().toString()
-                    : "No content";
-            logger.info("Task completed with result: {}", result);
-
-            // Find the task associated with this update
-            Optional<Map.Entry<String, Integer>> taskEntry = agentToTaskMap.entrySet().stream()
-                    .filter(entry -> event.getId().contains(entry.getKey()))
-                    .findFirst();
-
-            if (taskEntry.isPresent()) {
-                Integer taskNumber = taskEntry.get().getValue(); // Fixed: use get() instead of getValue()
-                WorkflowTask task = workflowTasks.get(taskNumber);
-
-                // Store the result
-                taskResults.put(taskNumber, result);
-                updateTaskStatus(taskNumber, "COMPLETED");
-
-                // Find and trigger dependent tasks
-                triggerDependentTasks(taskNumber);
-
-                // Mark this task as done
-                workflowCompletionLatch.countDown();
-            } else {
-                logger.warn("Received status update for unknown task: {}", event.getId());
-            }
-        } else if ("failed".equals(event.getStatus())) { //FIXIT NOT String comparision
-            // Get the error message
-            String errorMessage = event.getStatus().getMessage() != null ? event.getStatus().getMessage().toString()
-                    : "Unknown error";
-            logger.error("Task failed: {}", errorMessage);
-
-            // Find and fail dependent tasks as well
-            Optional<Map.Entry<String, Integer>> taskEntry = agentToTaskMap.entrySet().stream()
-                    .filter(entry -> event.getId().contains(entry.getKey()))
-                    .findFirst();
-
-            if (taskEntry.isPresent()) {
-                Integer taskNumber = taskEntry.get().getValue(); // Fixed: use get() instead of getValue()
-                updateTaskStatus(taskNumber, "FAILED");
-                workflowCompletionLatch.countDown();
-            }
-        }
-    }
-
-    /**
-     * Handle task artifact updates
-     */
-    private void handleArtifactUpdate(TaskArtifactUpdateEvent event) {
-        logger.debug("Received artifact update: {}", event.getArtifact().getDescription());
-        // Here you could store or process artifacts if needed
-    }
-
-    /**
      * Handle task failures
      */
     private void handleTaskFailure(WorkflowTask task, Throwable error) {
         logger.error("Task #{} failed: {}", task.getTaskNumber(), error.getMessage(), error);
         updateTaskStatus(task.getTaskNumber(), "FAILED");
+        taskResults.put(task.getTaskNumber(), "FAILED: " + error.getMessage());
         workflowCompletionLatch.countDown();
     }
 
@@ -251,9 +218,40 @@ public class WorkflowOrchestrator {
         // Find tasks that depend on the completed task
         List<WorkflowTask> dependentTasks = workflowTasks.values().stream()
                 .filter(t -> Objects.equals(t.getRequiredPredecessor(), completedTaskNumber))
+                .filter(t -> !"RUNNING".equals(t.getStatus()) && !"COMPLETED".equals(t.getStatus()))
                 .collect(Collectors.toList());
 
         // Execute each dependent task
         dependentTasks.forEach(this::executeTask);
+    }
+
+    /**
+     * Extract result from A2A response
+     */
+    private String extractResultFromResponse(SendMessageSuccessResponse response) {
+        if (response != null && response.getResult() != null) {
+            Message resultMessage = response.getResult();
+            if (resultMessage.getParts() != null && !resultMessage.getParts().isEmpty()) {
+                Part firstPart = resultMessage.getParts().get(0);
+                if (firstPart instanceof TextPart) {
+                    return ((TextPart) firstPart).getText();
+                }
+            }
+        }
+        return "No result received";
+    }
+
+    /**
+     * Get agent URL by name - you should implement this based on your agent registry
+     */
+    private String getAgentUrl(String agentName) {
+        // This is a simple mapping - in a real system you'd use a service registry
+        Map<String, String> agentUrls = Map.of(
+            "DataProcessor", "http://localhost:8081/agent/message",
+            "MLTrainer", "http://localhost:8082/agent/message",
+            "DeploymentAgent", "http://localhost:8083/agent/message"
+        );
+        
+        return agentUrls.get(agentName);
     }
 }

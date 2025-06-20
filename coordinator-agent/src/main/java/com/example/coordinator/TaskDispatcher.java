@@ -1,10 +1,9 @@
-// src/main/java/com/example/coordinator/TaskDispatcher.java
 package com.example.coordinator;
 
 import com.example.coordinator.model.AggregatedResult;
 import com.example.coordinator.model.WorkerTask;
 import net.kaduk.a2a.*;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -15,12 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class TaskDispatcher {
 
-    private final A2AWebClientService a2aClient;
-
-    // Constructor injection with @Lazy to avoid circular dependency
-    public TaskDispatcher(@Lazy A2AWebClientService a2aClient) {
-        this.a2aClient = a2aClient;
-    }
+    @Autowired
+    private A2AWebClientService a2aClient;
 
     private final Map<String, WorkerTask> activeTasks = new ConcurrentHashMap<>();
     
@@ -32,20 +27,15 @@ public class TaskDispatcher {
         
         System.out.println("Starting coordination for input: " + input);
         
-        // Create tasks for both workers
         WorkerTask taskA = createWorkerTask("worker-a", input, "transform", coordinationId);
         WorkerTask taskB = createWorkerTask("worker-b", input, "analyze", coordinationId);
         
         activeTasks.put(taskA.getTaskId(), taskA);
         activeTasks.put(taskB.getTaskId(), taskB);
 
-        // Dispatch to Worker A (Text transformation)
         Mono<SendMessageSuccessResponse> workerAResponse = sendTaskToWorker(WORKER_A_URL, taskA);
-        
-        // Dispatch to Worker B (Text analysis)
         Mono<SendMessageSuccessResponse> workerBResponse = sendTaskToWorker(WORKER_B_URL, taskB);
 
-        // Wait for both workers to complete and aggregate results
         return Mono.zip(workerAResponse, workerBResponse)
                 .map(tuple -> {
                     SendMessageSuccessResponse responseA = tuple.getT1();
@@ -53,24 +43,20 @@ public class TaskDispatcher {
                     
                     System.out.println("Received responses from both workers");
                     
-                    // Extract results from responses
                     String resultA = extractResultFromResponse(responseA);
                     String resultB = extractResultFromResponse(responseB);
                     
                     System.out.println("Worker A result: " + resultA);
                     System.out.println("Worker B result: " + resultB);
                     
-                    // Update task results
                     taskA.setResult(resultA);
                     taskA.setStatus("completed");
                     taskB.setResult(resultB);
                     taskB.setStatus("completed");
                     
-                    // Remove from active tasks
                     activeTasks.remove(taskA.getTaskId());
                     activeTasks.remove(taskB.getTaskId());
                     
-                    // Create aggregated result
                     return AggregatedResult.builder()
                             .coordinationId(coordinationId)
                             .completedTasks(Arrays.asList(taskA, taskB))
@@ -78,9 +64,7 @@ public class TaskDispatcher {
                                     "originalInput", input,
                                     "transformedText", resultA,
                                     "analysisResult", resultB,
-                                    "combinedLength", resultA.length() + resultB.length(),
-                                    "workerAProcessingTime", taskA.getTimestamp(),
-                                    "workerBProcessingTime", taskB.getTimestamp()
+                                    "combinedLength", resultA.length() + resultB.length()
                             ))
                             .summary(String.format(
                                     "Successfully coordinated processing of '%s'. Transformation: '%s', Analysis: '%s'", 
@@ -92,7 +76,6 @@ public class TaskDispatcher {
                 .timeout(Duration.ofSeconds(30))
                 .doOnError(error -> {
                     System.err.println("Coordination failed: " + error.getMessage());
-                    // Clean up active tasks on error
                     activeTasks.remove(taskA.getTaskId());
                     activeTasks.remove(taskB.getTaskId());
                 })
