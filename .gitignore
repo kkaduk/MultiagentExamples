@@ -1,5 +1,8 @@
 HELP.md
 target/
+worker-a/target/
+worker-b/target/
+coordinator-agent/target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

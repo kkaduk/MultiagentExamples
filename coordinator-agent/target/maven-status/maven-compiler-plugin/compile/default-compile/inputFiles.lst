@@ -1,5 +1,5 @@
-/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorApplication.java
-/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorAgent.java
-/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/model/WorkerTask.java
-/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/model/AggregatedResult.java
-/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/TaskDispatcher.java
+/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/TaskDispatcher.java
+/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/model/WorkerTask.java
+/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/model/AggregatedResult.java
+/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorApplication.java
+/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorAgent.java
