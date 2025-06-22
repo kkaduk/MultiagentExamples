@@ -1,3 +1,4 @@
+// src/main/java/com/example/workerb/WorkerBApplication.java
 package com.example.workerb;
 
 import org.springframework.boot.SpringApplication;

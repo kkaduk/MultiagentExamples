@@ -1,3 +1,2 @@
-com/example/workera/service/TextTransformationService.class
 com/example/workera/WorkerAApplication.class
-com/example/workera/TextTransformerAgent.class
+com/example/workera/DataProcessorAgent.class

@@ -1,5 +1,3 @@
-com/example/workerb/TextAnalyzerAgent.class
+com/example/workerb/TextProcessorAgent$SentimentResult.class
 com/example/workerb/WorkerBApplication.class
-com/example/workerb/service/model/AnalysisResult.class
-com/example/workerb/service/model/AnalysisResult$AnalysisResultBuilder.class
-com/example/workerb/service/TextAnalysisService.class
+com/example/workerb/TextProcessorAgent.class
