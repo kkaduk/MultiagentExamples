@@ -49,33 +49,53 @@ public class CoordinatorAgent {
     }
 
     private void discoverWorkers() {
+
+        // External capability query to discover workers
+        CapabilityQuery query = CapabilityQuery.builder()
+                .requiredTags(Arrays.asList("nlp", "text-processing"))
+                .keywords(Arrays.asList("analyze", "sentiment"))
+                .maxResults(5)
+                .build();
+        CapabilityQuery queryAll = CapabilityQuery.builder()
+                // .requiredTags(Arrays.asList("trend-analysis"))
+                // .keywords(Arrays.asList("analy"))    
+                .skillId("analyze-trends")
+                .maxResults(5)
+                .build();
+        CapabilityDiscoveryResponse skils = webClient.post()
+                .uri("http://localhost:8080" + "/a2a/receptionist/discover")
+                .bodyValue(queryAll)
+                .retrieve()
+                .bodyToMono(CapabilityDiscoveryResponse.class)
+                .timeout(java.time.Duration.ofSeconds(10))
+                .block();
+        // Internal capability query to discover workers
+        Mono<List<AgentCapabilityInfo>> skills = receptionist.findAgentsByCapability(queryAll);
+        skills.subscribe(agentCapabilities -> {
+            System.out.println("Discovered agent capabilities: " + agentCapabilities);
+        });
+
+        SkillInvocationRequest skillRequest = SkillInvocationRequest.builder()
+                .agentName("DataProcessor")
+                .skillId("process-data")
+                .input("This is a great product!")
+                .build();
+            
+
+        // POST /a2a/receptionist/invoke
+        Mono<SkillInvocationResponse> skillResponse = receptionist.invokeAgentSkill(skillRequest);
+        // var xxx = skillResponse.block().getResult().getParts().size();
+        // skillResponse.subscribe(response -> {
+        //     System.out.println("Skill invocation result: " + response.getResult().getParts());
+        // });
+
+        // skills.subscribe(agentCapabilities -> {
+        //     System.out.println("Discovered agent capabilities: " + agentCapabilities);
+        // });
+
+
         for (String endpoint : workerEndpoints) {
             try {
-
-                // External capability query to discover workers
-                CapabilityQuery query = CapabilityQuery.builder()
-                        .requiredTags(Arrays.asList("nlp", "text-processing"))
-                        .keywords(Arrays.asList("analyze", "sentiment"))
-                        .maxResults(5)
-                        .build();
-                CapabilityQuery queryAll = CapabilityQuery.builder()
-                        .requiredTags(Arrays.asList("nlp", "text-processing"))
-                        .keywords(Arrays.asList("analyze", "sentiment"))
-                        .maxResults(5)
-                        .build();
-                CapabilityDiscoveryResponse skils = webClient.post()
-                        .uri(endpoint + "/a2a/receptionist/discover")
-                        .bodyValue(queryAll)
-                        .retrieve()
-                        .bodyToMono(CapabilityDiscoveryResponse.class)
-                        .timeout(java.time.Duration.ofSeconds(10))
-                        .block();
-                // Internal capability query to discover workers
-                Mono<List<AgentCapabilityInfo>> skills = receptionist.findAgentsByCapability(queryAll);
-
-                skills.subscribe(agentCapabilities -> {
-                    System.out.println("Discovered agent capabilities: " + agentCapabilities);
-                });
 
                 System.out.println("Attempting to discover worker at: " + endpoint);
 

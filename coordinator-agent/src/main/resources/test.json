@@ -1,0 +1,35 @@
+{
+    "agentName": "TaskCoordinator",
+    "skills": [
+        {
+            "id": "refresh-workers",
+            "name": "Refresh Worker Discovery",
+            "description": "Rediscovers available workers and their capabilities",
+            "tags": [
+                "discovery",
+                "refresh",
+                "management"
+            ]
+        },
+        {
+            "id": "coordinate-task",
+            "name": "Coordinate Complex Task",
+            "description": "Coordinates complex tasks by planning, delegating, and aggregating results",
+            "tags": [
+                "coordination",
+                "planning",
+                "management"
+            ]
+        },
+        {
+            "id": "list-workers",
+            "name": "List Available Workers",
+            "description": "Lists all discovered workers and their capabilities",
+            "tags": [
+                "list",
+                "workers",
+                "capabilities"
+            ]
+        }
+    ]
+}

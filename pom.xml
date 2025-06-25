@@ -18,11 +18,7 @@
 
     <modules>
         <module>coordinator-agent</module>
-       <!-- <module>cognitivekb</module>
-        <module>webscraper</module>
-        <module>agent</module>
-        <module>analysi s</module>
-        <module>fibo</module> -->
+        <!-- <module>a2a-java</module> -->
     </modules>
 
     <properties>
