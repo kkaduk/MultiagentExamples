@@ -2,6 +2,8 @@
 package com.example.coordinator;
 
 import net.kaduk.a2a.*;
+import net.kaduk.a2a.receptionist.*;
+import net.kaduk.a2a.receptionist.model.*;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,6 +31,9 @@ public class CoordinatorAgent {
 
     @Autowired
     Receptionist receptionist;
+
+    @Autowired
+    ReceptionistService receptionistService;
 
     // List of known worker endpoints to discover
     private final List<String> workerEndpoints = Arrays.asList(
@@ -75,6 +80,7 @@ public class CoordinatorAgent {
             System.out.println("Discovered agent capabilities: " + agentCapabilities);
         });
 
+        var yyy = receptionistService.searchAgentsByCapability(query);               
         SkillInvocationRequest skillRequest = SkillInvocationRequest.builder()
                 .agentName("DataProcessor")
                 .skillId("process-data")
