@@ -1,0 +1,48 @@
+{
+    "agentName": "TextProcessor",
+    "skills": [
+        {
+            "id": "analyze-sentiment",
+            "name": "Analyze Sentiment",
+            "description": "Analyzes the sentiment and emotional tone of text",
+            "tags": [
+                "sentiment",
+                "emotion",
+                "analysis",
+                "nlp"
+            ]
+        },
+        {
+            "id": "extract-keywords",
+            "name": "Extract Keywords",
+            "description": "Extracts important keywords and phrases from text",
+            "tags": [
+                "keywords",
+                "extraction",
+                "nlp",
+                "information"
+            ]
+        },
+        {
+            "id": "process-text",
+            "name": "Process Text",
+            "description": "Processes and analyzes text content, extracts information, and provides insights",
+            "tags": [
+                "text-processing",
+                "nlp",
+                "analysis",
+                "language"
+            ]
+        },
+        {
+            "id": "summarize-text",
+            "name": "Summarize Text",
+            "description": "Creates a concise summary of longer text content",
+            "tags": [
+                "summarization",
+                "nlp",
+                "text-reduction"
+            ]
+        }
+    ]
+}
