@@ -1,34 +1,35 @@
 {
-    "agentName": "TaskCoordinator",
+    "agentName": "DataProcessor",
     "skills": [
         {
-            "id": "refresh-workers",
-            "name": "Refresh Worker Discovery",
-            "description": "Rediscovers available workers and their capabilities",
+            "id": "process-data",
+            "name": "Process Data",
+            "description": "Processes and analyzes numerical data, performs calculations, and generates insights",
             "tags": [
-                "discovery",
-                "refresh",
-                "management"
+                "data-processing",
+                "analysis",
+                "computation",
+                "mathematics"
             ]
         },
         {
-            "id": "coordinate-task",
-            "name": "Coordinate Complex Task",
-            "description": "Coordinates complex tasks by planning, delegating, and aggregating results",
+            "id": "calculate",
+            "name": "Calculate",
+            "description": "Performs mathematical calculations and operations",
             "tags": [
-                "coordination",
-                "planning",
-                "management"
+                "calculation",
+                "mathematics",
+                "arithmetic"
             ]
         },
         {
-            "id": "list-workers",
-            "name": "List Available Workers",
-            "description": "Lists all discovered workers and their capabilities",
+            "id": "analyze-trends",
+            "name": "Analyze Trends",
+            "description": "Analyzes data trends and patterns",
             "tags": [
-                "list",
-                "workers",
-                "capabilities"
+                "trend-analysis",
+                "patterns",
+                "data-science"
             ]
         }
     ]

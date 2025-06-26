@@ -1,24 +1,43 @@
 // src/main/java/com/example/coordinator/CoordinatorAgent.java
 package com.example.coordinator;
 
-import net.kaduk.a2a.*;
-import net.kaduk.a2a.receptionist.*;
-import net.kaduk.a2a.receptionist.model.*;
-import reactor.core.publisher.Mono;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.CallResponseSpec;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import net.kaduk.a2a.A2AAgent;
+import net.kaduk.a2a.A2AAgentSkill;
+import net.kaduk.a2a.AgentCapabilityInfo;
+import net.kaduk.a2a.AgentCard;
+import net.kaduk.a2a.AgentSkill;
+import net.kaduk.a2a.CapabilityDiscoveryResponse;
+import net.kaduk.a2a.Message;
+import net.kaduk.a2a.MessageSendConfiguration;
+import net.kaduk.a2a.MessageSendParams;
+import net.kaduk.a2a.Part;
+import net.kaduk.a2a.SendMessageRequest;
+import net.kaduk.a2a.SendMessageSuccessResponse;
+import net.kaduk.a2a.SkillInvocationRequest;
+import net.kaduk.a2a.SkillInvocationResponse;
+import net.kaduk.a2a.TextPart;
+import net.kaduk.a2a.receptionist.Receptionist;
+import net.kaduk.a2a.receptionist.model.CapabilityQuery;
+import reactor.core.publisher.Mono;
 
 @Component
 @A2AAgent(name = "TaskCoordinator", version = "1.0.0", description = "Coordinates complex tasks by delegating to specialized worker agents", url = "http://localhost:8081")
@@ -32,8 +51,8 @@ public class CoordinatorAgent {
     @Autowired
     Receptionist receptionist;
 
-    @Autowired
-    ReceptionistService receptionistService;
+    // @Autowired
+    // ReceptionistService receptionistService;
 
     // List of known worker endpoints to discover
     private final List<String> workerEndpoints = Arrays.asList(
@@ -63,7 +82,7 @@ public class CoordinatorAgent {
                 .build();
         CapabilityQuery queryAll = CapabilityQuery.builder()
                 // .requiredTags(Arrays.asList("trend-analysis"))
-                // .keywords(Arrays.asList("analy"))    
+                // .keywords(Arrays.asList("analy"))
                 .skillId("analyze-trends")
                 .maxResults(5)
                 .build();
@@ -80,25 +99,47 @@ public class CoordinatorAgent {
             System.out.println("Discovered agent capabilities: " + agentCapabilities);
         });
 
-        var yyy = receptionistService.searchAgentsByCapability(query);               
+        var yyy = receptionist.findBestAgentForCapability(query);
+        yyy.subscribe(agent -> {
+            System.out.println("Best agent for capability: " + agent);
+        });
+
         SkillInvocationRequest skillRequest = SkillInvocationRequest.builder()
                 .agentName("DataProcessor")
                 .skillId("process-data")
-                .input("This is a great product!")
+                .input("This is a great product 123 5678!")
                 .build();
-            
 
         // POST /a2a/receptionist/invoke
-        Mono<SkillInvocationResponse> skillResponse = receptionist.invokeAgentSkill(skillRequest);
+        // Mono<SkillInvocationResponse> skillResponse =
+        // receptionist.invokeAgentSkill(skillRequest);
+        // skillResponse.subscribe(response -> {
+        // if(response.getSuccess()) {
+        // System.out.println("(KK) Skill invocation result: " +
+        // response.getResult().getTaskId() +
+        // " - " + response.getResult().getParts().stream()
+        // .map(part -> part instanceof TextPart ? ((TextPart) part).getText() : "")
+        // .collect(Collectors.joining(", ")));
+        // }
+        // });
+
+        SkillInvocationResponse response = receptionist.invokeAgentSkill(skillRequest).block();
+        if (response != null && response.getSuccess()) {
+            System.out.println("(KK666) Skill invocation result: " + response.getResult().getTaskId() +
+                    " - " + response.getResult().getParts().stream()
+                            .map(part -> part instanceof TextPart ? ((TextPart) part).getText() : "")
+                            .collect(Collectors.joining(", ")));
+        }
+
         // var xxx = skillResponse.block().getResult().getParts().size();
         // skillResponse.subscribe(response -> {
-        //     System.out.println("Skill invocation result: " + response.getResult().getParts());
+        // System.out.println("Skill invocation result: " +
+        // response.getResult().getParts());
         // });
 
         // skills.subscribe(agentCapabilities -> {
-        //     System.out.println("Discovered agent capabilities: " + agentCapabilities);
+        // System.out.println("Discovered agent capabilities: " + agentCapabilities);
         // });
-
 
         for (String endpoint : workerEndpoints) {
             try {

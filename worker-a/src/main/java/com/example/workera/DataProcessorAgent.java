@@ -2,6 +2,7 @@
 package com.example.workera;
 
 import net.kaduk.a2a.*;
+
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -9,6 +10,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 @A2AAgent(
     name = "DataProcessor",
@@ -27,6 +32,7 @@ public class DataProcessorAgent {
     public CompletableFuture<String> processData(String input) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                log.info("(KK-a) Received data processing request: {}", input);
                 // Extract numbers from input
                 List<Double> numbers = extractNumbers(input);
                 
@@ -36,6 +42,7 @@ public class DataProcessorAgent {
                 
                 // Perform various data analysis operations
                 Map<String, Object> analysis = performDataAnalysis(numbers);
+                log.info("(KK-a) Data analysis completed: {}", analysis);
                 
                 // Generate insights
                 String insights = generateInsights(analysis, input);
@@ -143,6 +150,7 @@ public class DataProcessorAgent {
     }
 
     private Map<String, Object> performDataAnalysis(List<Double> numbers) {
+        log.info("(KK-a) Performing data analysis on {} numbers", numbers.size());
         Map<String, Object> analysis = new HashMap<>();
         
         double sum = numbers.stream().mapToDouble(Double::doubleValue).sum();
@@ -161,7 +169,8 @@ public class DataProcessorAgent {
         analysis.put("min", min);
         analysis.put("max", max);
         analysis.put("stdDev", stdDev);
-        
+        log.info("(KK-a) Data analysis results: sum=%.2f, average=%.2f, min=%.2f, max=%.2f, stdDev=%.2f",
+                sum, average, min, max, stdDev);
         return analysis;
     }
 

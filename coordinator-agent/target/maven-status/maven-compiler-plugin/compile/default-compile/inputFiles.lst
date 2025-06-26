@@ -1,4 +1,4 @@
-/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorAgent.java
-/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorApplication.java
-/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/config/CoordinatorConfig.java
-/Users/kkaduk/Project/oracle/poc/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/conversation/ConversationMemoryChatMemory.java
+/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorAgent.java
+/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/CoordinatorApplication.java
+/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/config/CoordinatorConfig.java
+/Users/KKADUK/Project/MultiagentExamples/coordinator-agent/src/main/java/com/example/coordinator/conversation/ConversationMemoryChatMemory.java
