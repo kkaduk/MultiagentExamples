@@ -1,9 +1,6 @@
-com/example/coordinator/conversation/ConversationMemoryChatMemory.class
 com/example/coordinator/CoordinatorAgent$SubtaskResult.class
 com/example/coordinator/CoordinatorAgent$TaskExecution.class
 com/example/coordinator/CoordinatorAgent.class
-com/example/coordinator/config/CoordinatorConfig.class
 com/example/coordinator/CoordinatorAgent$SubTask.class
 com/example/coordinator/CoordinatorAgent$TaskPlan.class
-com/example/coordinator/CoordinatorApplication.class
 com/example/coordinator/CoordinatorAgent$WorkerAgent.class

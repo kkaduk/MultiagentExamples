@@ -1,8 +1,6 @@
 // src/main/java/com/example/workera/DataProcessorAgent.java
 package com.example.workera;
 
-import net.kaduk.a2a.*;
-
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -10,6 +8,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.a2a.receptionist.model.A2AAgent;
+import io.a2a.receptionist.model.A2AAgentSkill;
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 

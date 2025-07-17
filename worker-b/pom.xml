@@ -33,11 +33,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-      <dependency>
-            <groupId>net.kaduk.a2a</groupId>
-            <artifactId>java</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-        </dependency>
+       <dependency>
+            <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-receptionist</artifactId>
+            <version>0.2.3.Beta2-SNAPSHOT</version>
+        </dependency>      
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

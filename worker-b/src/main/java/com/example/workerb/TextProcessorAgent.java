@@ -1,13 +1,16 @@
 // src/main/java/com/example/workerb/TextProcessorAgent.java
 package com.example.workerb;
 
-import net.kaduk.a2a.*;
+
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import io.a2a.receptionist.model.A2AAgent;
+import io.a2a.receptionist.model.A2AAgentSkill;
 
 @Component
 @A2AAgent(

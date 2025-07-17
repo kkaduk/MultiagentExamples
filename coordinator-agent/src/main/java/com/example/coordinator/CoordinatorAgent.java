@@ -14,29 +14,29 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.CallResponseSpec;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import net.kaduk.a2a.A2AAgent;
-import net.kaduk.a2a.A2AAgentSkill;
-import net.kaduk.a2a.AgentCapabilityInfo;
-import net.kaduk.a2a.AgentCard;
-import net.kaduk.a2a.AgentSkill;
-import net.kaduk.a2a.CapabilityDiscoveryResponse;
-import net.kaduk.a2a.Message;
-import net.kaduk.a2a.MessageSendConfiguration;
-import net.kaduk.a2a.MessageSendParams;
-import net.kaduk.a2a.Part;
-import net.kaduk.a2a.SendMessageRequest;
-import net.kaduk.a2a.SendMessageSuccessResponse;
-import net.kaduk.a2a.SkillInvocationRequest;
-import net.kaduk.a2a.SkillInvocationResponse;
-import net.kaduk.a2a.TextPart;
-import net.kaduk.a2a.receptionist.Receptionist;
-import net.kaduk.a2a.receptionist.model.CapabilityQuery;
+import io.a2a.receptionist.Receptionist;
+import io.a2a.receptionist.model.A2AAgent;
+import io.a2a.receptionist.model.A2AAgentSkill;
+import io.a2a.receptionist.model.A2ASkillQuery;
+import io.a2a.receptionist.model.AgentSkillDocument;
+import io.a2a.receptionist.model.SkillDiscoveryResponse;
+import io.a2a.receptionist.model.SkillInvocationRequest;
+import io.a2a.receptionist.model.SkillInvocationResponse;
+import io.a2a.spec.AgentCard;
+import io.a2a.spec.AgentSkill;
+import io.a2a.spec.EventKind;
+import io.a2a.spec.Message;
+import io.a2a.spec.MessageSendConfiguration;
+import io.a2a.spec.MessageSendParams;
+import io.a2a.spec.Part;
+import io.a2a.spec.SendMessageRequest;
+import io.a2a.spec.SendMessageResponse;
+import io.a2a.spec.TextPart;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -46,10 +46,7 @@ public class CoordinatorAgent {
     private final ChatClient chatClient;
     private final WebClient webClient;
     private final Map<String, WorkerAgent> availableWorkers = new ConcurrentHashMap<>();
-    private final Map<String, TaskExecution> runningTasks = new ConcurrentHashMap<>();
-
-    @Autowired
-    Receptionist receptionist;
+    private final Receptionist receptionist;
 
     // @Autowired
     // ReceptionistService receptionistService;
@@ -61,9 +58,10 @@ public class CoordinatorAgent {
     // Add more worker endpoints as needed
     );
 
-    public CoordinatorAgent(ChatClient chatClient, WebClient webClient) {
+    public CoordinatorAgent(ChatClient chatClient, WebClient webClient, Receptionist receptionist) {
         this.chatClient = chatClient;
         this.webClient = webClient;
+        this.receptionist = receptionist;
     }
 
     @EventListener(ContextRefreshedEvent.class)
@@ -75,31 +73,31 @@ public class CoordinatorAgent {
     private void discoverWorkers() {
 
         // External capability query to discover workers
-        CapabilityQuery query = CapabilityQuery.builder()
+        A2ASkillQuery query = A2ASkillQuery.builder()
                 .requiredTags(Arrays.asList("nlp", "text-processing"))
                 .keywords(Arrays.asList("analyze", "sentiment"))
                 .maxResults(5)
                 .build();
-        CapabilityQuery queryAll = CapabilityQuery.builder()
+        A2ASkillQuery queryAll = A2ASkillQuery.builder()
                 // .requiredTags(Arrays.asList("trend-analysis"))
                 // .keywords(Arrays.asList("analy"))
                 .skillId("analyze-trends")
                 .maxResults(5)
                 .build();
-        CapabilityDiscoveryResponse skils = webClient.post()
+        SkillDiscoveryResponse skils = webClient.post()
                 .uri("http://localhost:8080" + "/a2a/receptionist/discover")
                 .bodyValue(queryAll)
                 .retrieve()
-                .bodyToMono(CapabilityDiscoveryResponse.class)
+                .bodyToMono(SkillDiscoveryResponse.class)
                 .timeout(java.time.Duration.ofSeconds(10))
                 .block();
         // Internal capability query to discover workers
-        Mono<List<AgentCapabilityInfo>> skills = receptionist.findAgentsByCapability(queryAll);
+        Mono<List<AgentSkillDocument>> skills = receptionist.findAgentsBySkills(queryAll);
         skills.subscribe(agentCapabilities -> {
             System.out.println("Discovered agent capabilities: " + agentCapabilities);
         });
 
-        var yyy = receptionist.findBestAgentForCapability(query);
+        var yyy = receptionist.findBestAgentForSkill(query);
         yyy.subscribe(agent -> {
             System.out.println("Best agent for capability: " + agent);
         });
@@ -110,19 +108,6 @@ public class CoordinatorAgent {
                 .input("This is a great product 123 5678!")
                 .build();
 
-        // POST /a2a/receptionist/invoke
-        // Mono<SkillInvocationResponse> skillResponse =
-        // receptionist.invokeAgentSkill(skillRequest);
-        // skillResponse.subscribe(response -> {
-        // if(response.getSuccess()) {
-        // System.out.println("(KK) Skill invocation result: " +
-        // response.getResult().getTaskId() +
-        // " - " + response.getResult().getParts().stream()
-        // .map(part -> part instanceof TextPart ? ((TextPart) part).getText() : "")
-        // .collect(Collectors.joining(", ")));
-        // }
-        // });
-
         SkillInvocationResponse response = receptionist.invokeAgentSkill(skillRequest).block();
         if (response != null && response.getSuccess()) {
             System.out.println("(KK666) Skill invocation result: " + response.getResult().getTaskId() +
@@ -130,16 +115,6 @@ public class CoordinatorAgent {
                             .map(part -> part instanceof TextPart ? ((TextPart) part).getText() : "")
                             .collect(Collectors.joining(", ")));
         }
-
-        // var xxx = skillResponse.block().getResult().getParts().size();
-        // skillResponse.subscribe(response -> {
-        // System.out.println("Skill invocation result: " +
-        // response.getResult().getParts());
-        // });
-
-        // skills.subscribe(agentCapabilities -> {
-        // System.out.println("Discovered agent capabilities: " + agentCapabilities);
-        // });
 
         for (String endpoint : workerEndpoints) {
             try {
@@ -178,16 +153,16 @@ public class CoordinatorAgent {
         // Extract capabilities from skills
         List<String> capabilities = new ArrayList<>();
 
-        if (agentCard.getSkills() != null) {
-            for (AgentSkill skill : agentCard.getSkills()) {
+        if (agentCard.capabilities() != null) {
+            for (AgentSkill skill : agentCard.skills()) {
                 // Add skill tags as capabilities
-                if (skill.getTags() != null) {
-                    capabilities.addAll(skill.getTags());
+                if (skill.tags() != null) {
+                    capabilities.addAll(skill.tags());
                 }
 
                 // Add skill names as capabilities (normalized)
-                if (skill.getName() != null) {
-                    capabilities.add(skill.getName().toLowerCase().replace(" ", "-"));
+                if (skill.name() != null) {
+                    capabilities.add(skill.name().toLowerCase().replace(" ", "-"));
                 }
             }
         }
@@ -199,11 +174,11 @@ public class CoordinatorAgent {
                 .collect(Collectors.toList());
 
         return new WorkerAgent(
-                agentCard.getName(),
+                agentCard.name(),
                 endpoint,
                 capabilities,
-                agentCard.getSkills(),
-                agentCard.getDescription());
+                agentCard.skills(),
+                agentCard.description());
     }
 
     private String generateWorkerId(WorkerAgent worker) {
@@ -222,7 +197,7 @@ public class CoordinatorAgent {
             System.out.println("   🏷️  Capabilities: " + worker.getCapabilities());
             System.out.println("   ⚡ Skills: " +
                     worker.getSkills().stream()
-                            .map(AgentSkill::getName)
+                            .map(AgentSkill::name)
                             .collect(Collectors.joining(", ")));
             System.out.println();
         }
@@ -288,7 +263,7 @@ public class CoordinatorAgent {
                     worker.getDescription(),
                     String.join(", ", worker.getCapabilities()),
                     worker.getSkills().stream()
-                            .map(skill -> skill.getName() + " (" + skill.getId() + ")")
+                            .map(skill -> skill.name() + " (" + skill.id() + ")")
                             .collect(Collectors.joining(", "))));
         }
 
@@ -376,18 +351,18 @@ public class CoordinatorAgent {
     private String findBestSkillId(WorkerAgent worker, String input) {
         // Find the most appropriate skill for the given input
         for (AgentSkill skill : worker.getSkills()) {
-            if (skill.getTags() != null) {
-                for (String tag : skill.getTags()) {
+            if (skill.tags() != null) {
+                for (String tag : skill.tags()) {
                     if (input.toLowerCase().contains(tag.toLowerCase()) ||
-                            skill.getDescription().toLowerCase().contains("process")) {
-                        return skill.getId();
+                            skill.description().toLowerCase().contains("process")) {
+                        return skill.id();
                     }
                 }
             }
         }
 
         // Return first available skill as fallback
-        return worker.getSkills().isEmpty() ? "default" : worker.getSkills().get(0).getId();
+        return worker.getSkills().isEmpty() ? "default" : worker.getSkills().get(0).id();
     }
 
     private TaskPlan createIntelligentFallbackPlan(String userQuery) {
@@ -435,11 +410,11 @@ public class CoordinatorAgent {
             System.out.println("Sending request to " + worker.getUrl() + "/agent/message");
             System.out.println("Using skill: " + subtask.getSkillId());
 
-            SendMessageSuccessResponse response = webClient.post()
+            SendMessageResponse response = webClient.post()
                     .uri(worker.getUrl() + "/agent/message")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(SendMessageSuccessResponse.class)
+                    .bodyToMono(SendMessageResponse.class)
                     .timeout(java.time.Duration.ofSeconds(30))
                     .block();
 
@@ -459,26 +434,23 @@ public class CoordinatorAgent {
     }
 
     private SendMessageRequest createA2ARequest(SubTask subtask) {
-        Message message = Message.builder()
-                .kind("message")
+        Message message = new Message.Builder()
                 .messageId(UUID.randomUUID().toString())
-                .role("user")
+                .role(Message.Role.USER) // This is required - cannot be null
                 .taskId(subtask.getSkillId()) // Use the discovered skill ID
                 .contextId(UUID.randomUUID().toString())
-                .parts(Collections.singletonList(TextPart.builder()
-                        .text(subtask.getInput())
-                        .build()))
+                .parts(Collections.singletonList(new TextPart(subtask.getInput())))
                 .build();
 
-        MessageSendParams params = MessageSendParams.builder()
+        MessageSendParams params = new MessageSendParams.Builder()
                 .message(message)
-                .configuration(MessageSendConfiguration.builder()
+                .configuration(new MessageSendConfiguration.Builder()
                         .acceptedOutputModes(Collections.singletonList("text/plain"))
                         .blocking(true)
                         .build())
                 .build();
 
-        return SendMessageRequest.builder()
+        return new SendMessageRequest.Builder()
                 .id(UUID.randomUUID().toString())
                 .params(params)
                 .build();
@@ -512,9 +484,9 @@ public class CoordinatorAgent {
             result.append("   ⚡ Skills:\n");
 
             for (AgentSkill skill : worker.getSkills()) {
-                result.append("      - ").append(skill.getName())
-                        .append(" (").append(skill.getId()).append(")")
-                        .append(" - ").append(skill.getDescription()).append("\n");
+                result.append("      - ").append(skill.name())
+                        .append(" (").append(skill.id()).append(")")
+                        .append(" - ").append(skill.description()).append("\n");
             }
             result.append("\n");
         }
@@ -580,9 +552,14 @@ public class CoordinatorAgent {
         return "";
     }
 
-    private String extractTextFromMessage(Message message) {
+    private String extractTextFromMessage(EventKind eventKind) {
+        if (!(eventKind instanceof Message)) {
+            return "Response is not a message";
+        }
+
+        Message message = (Message) eventKind;
         if (message.getParts() != null && !message.getParts().isEmpty()) {
-            Part firstPart = message.getParts().get(0);
+            Part<?> firstPart = message.getParts().get(0);
             if (firstPart instanceof TextPart) {
                 return ((TextPart) firstPart).getText();
             }
